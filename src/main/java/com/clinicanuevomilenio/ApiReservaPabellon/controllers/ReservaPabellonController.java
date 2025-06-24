@@ -37,4 +37,11 @@ public class ReservaPabellonController {
     public ResponseEntity<ReservaPabellonResponseDTO> obtenerReserva(@PathVariable Integer id) {
         return ResponseEntity.ok(reservaService.obtenerReservaPorId(id));
     }
+
+    @GetMapping("/pabellones/estado")
+    public ResponseEntity<List<ReservaPabellonResponseDTO>> obtenerReservasPorEstadoPabellon(
+            @RequestParam Integer estadoId) {
+        List<ReservaPabellonResponseDTO> reservas = reservaService.listarPorEstadoDePabellon(estadoId);
+        return ResponseEntity.ok(reservas);
+    }
 }

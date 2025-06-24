@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class ReservaPabellon {
 
     @Id
@@ -37,15 +36,13 @@ public class ReservaPabellon {
 
     private String comentario;
 
-    @ManyToOne
-    @JoinColumn(name = "estado_id", nullable = false)
-    private EstadoSolicitud estado;
+    // Solo referencias por ID
+    @Column(name = "estado_id", nullable = false)
+    private Integer estadoId;
 
-    @ManyToOne
-    @JoinColumn(name = "PABELLON_pabellon_id", nullable = false)
-    private Pabellon pabellon;
+    @Column(name = "PABELLON_pabellon_id", nullable = false)
+    private Integer pabellonId;
 
-    @ManyToOne
-    @JoinColumn(name = "USUARIO_id_usuario", nullable = false)
-    private Usuario usuario;
+    @Column(name = "USUARIO_id_usuario", nullable = false)
+    private Integer usuarioId;
 }

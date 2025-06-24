@@ -9,9 +9,5 @@ import java.util.List;
 @Repository
 public interface ReservaPabellonRepository extends JpaRepository<ReservaPabellon, Integer> {
 
-    List<ReservaPabellon> findByPabellonEstadoId(Integer estadoId);
-
-    List<ReservaPabellon> findByPabellonTipoPabellonId(Integer tipoPabellonId);
-
-    List<ReservaPabellon> findByPabellonEstadoIdAndPabellonTipoPabellonId(Integer estadoId, Integer tipoPabellonId);
+    List<ReservaPabellon> findByPabellonIdIn(List<Integer> pabellonIds);
 }
