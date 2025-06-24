@@ -1,0 +1,13 @@
+package com.clinicanuevomilenio.ApiReservaPabellon;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ApiReservaPabellonApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ApiReservaPabellonApplication.class, args);
+	}
+
+}
