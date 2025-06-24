@@ -7,6 +7,7 @@ import com.clinicanuevomilenio.ApiReservaPabellon.repository.EstadoSolicitudRepo
 import com.clinicanuevomilenio.ApiReservaPabellon.repository.ReservaPabellonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,9 +28,24 @@ public class ReservaPabellonService {
     @Autowired
     private UsuarioClientService usuarioClient;
 
+    @Transactional
     public ReservaPabellonResponseDTO crearReserva(ReservaPabellonRequestDTO dto, Integer userId) {
-        PabellonDTO pabellon = pabellonClient.obtenerPabellonPorId(dto.getPabellonId());
 
+        //VALIDACIÓN DE ESTADO DEL PABELLÓN
+        PabellonDTO pabellon = pabellonClient.obtenerPabellonPorId(dto.getPabellonId());
+        if (pabellon == null || !"Disponible".equals(pabellon.getEstado().getNombre())) {
+            throw new RuntimeException("Reserva rechazada: El pabellón no existe o no se encuentra 'Disponible'.");
+        }
+
+        //VALIDACIÓN DE CONCURRENCIA (DOBLE RESERVA)
+        List<ReservaPabellon> reservasSuperpuestas = reservaRepository.findOverlappingReservas(
+                dto.getPabellonId(), dto.getFechaHrInicio(), dto.getFechaHrTermino());
+
+        if (!reservasSuperpuestas.isEmpty()) {
+            throw new RuntimeException("Reserva rechazada: Ya existe una reserva en el horario solicitado para este pabellón.");
+        }
+
+        //CREACIÓN DE LA RESERVA (Solo si las validaciones de negocio pasan)
         ReservaPabellon reserva = new ReservaPabellon();
         reserva.setFechaSolicitud(LocalDateTime.now());
         reserva.setFechaConfirmacion(null);
@@ -42,10 +58,15 @@ public class ReservaPabellonService {
         reserva.setUsuarioId(userId);
 
         EstadoSolicitud estado = estadoRepository.findById(1)
-                .orElseThrow(() -> new RuntimeException("Estado inicial no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Estado inicial 'Pendiente' no encontrado."));
         reserva.setEstadoId(estado.getId());
 
-        return toResponseDTO(reservaRepository.save(reserva));
+        ReservaPabellon reservaGuardada = reservaRepository.save(reserva);
+
+        // Para la respuesta, necesitamos los datos del usuario. Hacemos la llamada aquí.
+        UsuarioDTO usuario = usuarioClient.obtenerUsuarioPorId(userId);
+
+        return toResponseDTO(reservaGuardada, usuario, pabellon);
     }
 
     public List<ReservaPabellonResponseDTO> listarReservas() {
@@ -60,9 +81,8 @@ public class ReservaPabellonService {
         return toResponseDTO(reserva);
     }
 
-    private ReservaPabellonResponseDTO toResponseDTO(ReservaPabellon reserva) {
+    private ReservaPabellonResponseDTO toResponseDTO(ReservaPabellon reserva, UsuarioDTO usuario, PabellonDTO pabellon) {
         ReservaPabellonResponseDTO dto = new ReservaPabellonResponseDTO();
-
         dto.setId(reserva.getId());
         dto.setFechaSolicitud(reserva.getFechaSolicitud());
         dto.setFechaConfirmacion(reserva.getFechaConfirmacion());
@@ -78,14 +98,15 @@ public class ReservaPabellonService {
         estadoDTO.setId(estado.getId());
         estadoDTO.setNombre(estado.getNombre());
         dto.setEstado(estadoDTO);
-
-        UsuarioDTO usuario = usuarioClient.obtenerUsuarioPorId(reserva.getUsuarioId());
         dto.setUsuario(usuario);
-
-        PabellonDTO pabellon = pabellonClient.obtenerPabellonPorId(reserva.getPabellonId());
-        dto.setPabellon(pabellon); // Se inyecta completo con estado y tipo anidados
-
+        dto.setPabellon(pabellon);
         return dto;
+    }
+
+    private ReservaPabellonResponseDTO toResponseDTO(ReservaPabellon reserva) {
+        UsuarioDTO usuario = usuarioClient.obtenerUsuarioPorId(reserva.getUsuarioId());
+        PabellonDTO pabellon = pabellonClient.obtenerPabellonPorId(reserva.getPabellonId());
+        return toResponseDTO(reserva, usuario, pabellon);
     }
 
     public List<ReservaPabellonResponseDTO> buscarReservasPorEstadoYTipoDePabellon(Integer estadoId, Integer tipoId) {

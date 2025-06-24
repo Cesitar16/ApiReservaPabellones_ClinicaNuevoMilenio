@@ -44,4 +44,13 @@ public class ReservaPabellonController {
         List<ReservaPabellonResponseDTO> reservas = reservaService.listarPorEstadoDePabellon(estadoId);
         return ResponseEntity.ok(reservas);
     }
+    //ejemplo de uso: localhost:8080/api/reservas/pabellones/filtro?estadoId=1&tipoId=2
+    @GetMapping("/pabellones/filtro")
+    public ResponseEntity<List<ReservaPabellonResponseDTO>> obtenerReservasPorFiltro(
+            @RequestParam Integer estadoId,
+            @RequestParam Integer tipoId) {
+
+        List<ReservaPabellonResponseDTO> reservas = reservaService.buscarReservasPorEstadoYTipoDePabellon(estadoId, tipoId);
+        return ResponseEntity.ok(reservas);
+    }
 }
