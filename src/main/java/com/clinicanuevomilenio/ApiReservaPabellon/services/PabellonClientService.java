@@ -1,14 +1,12 @@
 package com.clinicanuevomilenio.ApiReservaPabellon.services;
 
 import com.clinicanuevomilenio.ApiReservaPabellon.dto.PabellonDTO;
-
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import java.util.List;
 
 @Service
 public class PabellonClientService {
@@ -25,9 +23,38 @@ public class PabellonClientService {
                     .bodyToMono(PabellonDTO.class)
                     .block();
         } catch (WebClientResponseException.NotFound e) {
-            throw new RuntimeException("Pabellón no encontrado con ID: " + id);
+            return null;
         } catch (Exception e) {
             throw new RuntimeException("Error al comunicarse con el servicio de pabellones: " + e.getMessage());
+        }
+    }
+
+    // --- NUEVO MÉTODO PARA BÚSQUEDA MASIVA ---
+    /**
+     * Llama al endpoint /por-ids de la pabellones-api para obtener
+     * una lista de pabellones en una sola llamada de red.
+     * @param ids La lista de IDs de pabellones a buscar.
+     * @return Una lista de DTOs de los pabellones encontrados.
+     */
+    public List<PabellonDTO> obtenerPabellonesPorIds(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of(); // Devuelve una lista vacía si no hay IDs que buscar
+        }
+
+        try {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/por-ids")
+                            // Spring WebClient se encarga de formatear la lista de IDs correctamente
+                            .queryParam("ids", ids)
+                            .build())
+                    .retrieve()
+                    .bodyToFlux(PabellonDTO.class) // Usamos Flux para una lista de objetos
+                    .collectList()
+                    .block();
+        } catch (Exception e) {
+            System.err.println("Error al obtener pabellones por IDs: " + e.getMessage());
+            return List.of();
         }
     }
 
