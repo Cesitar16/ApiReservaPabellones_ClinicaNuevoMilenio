@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PabellonClientService {
@@ -38,18 +39,20 @@ public class PabellonClientService {
      */
     public List<PabellonDTO> obtenerPabellonesPorIds(List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
-            return List.of(); // Devuelve una lista vacía si no hay IDs que buscar
+            return List.of();
         }
+
+        // Usamos .join(",") para asegurar que los IDs se envíen como "1,2,3"
+        String idsComoString = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
 
         try {
             return webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/por-ids")
-                            // Spring WebClient se encarga de formatear la lista de IDs correctamente
-                            .queryParam("ids", ids)
+                            .queryParam("ids", idsComoString) // Enviamos el string separado por comas
                             .build())
                     .retrieve()
-                    .bodyToFlux(PabellonDTO.class) // Usamos Flux para una lista de objetos
+                    .bodyToFlux(PabellonDTO.class)
                     .collectList()
                     .block();
         } catch (Exception e) {
